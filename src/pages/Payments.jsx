@@ -1,32 +1,5 @@
 import Card from "../components/ui/Card";
 
-const payments = [
-  {
-    member: "Alex Carter",
-    amount: "$49",
-    date: "2026-03-10",
-    method: "Credit Card"
-  },
-  {
-    member: "Jordan Smith",
-    amount: "$129",
-    date: "2026-03-09",
-    method: "UPI"
-  },
-  {
-    member: "Taylor Lee",
-    amount: "$399",
-    date: "2026-03-08",
-    method: "Bank Transfer"
-  },
-  {
-    member: "Morgan Ray",
-    amount: "$49",
-    date: "2026-03-07",
-    method: "Cash"
-  }
-];
-
 function Payments() {
   return (
     <div className="page">
@@ -40,8 +13,9 @@ function Payments() {
             className="input"
             type="text"
             placeholder="Search by member or method"
+            disabled
           />
-          <select className="input select">
+          <select className="input select" disabled>
             <option>All Methods</option>
             <option>Credit Card</option>
             <option>UPI</option>
@@ -52,32 +26,7 @@ function Payments() {
       </div>
 
       <Card title="Payment History">
-        <div className="table-wrapper">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Member</th>
-                <th>Amount</th>
-                <th>Date</th>
-                <th>Method</th>
-                <th style={{ width: 120 }}>Invoice</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payments.map((p) => (
-                <tr key={p.member + p.date}>
-                  <td>{p.member}</td>
-                  <td>{p.amount}</td>
-                  <td>{p.date}</td>
-                  <td>{p.method}</td>
-                  <td>
-                    <button className="btn btn-outline-sm">View Invoice</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <div>No payment data yet. Add payments endpoints to record transactions and generate invoices.</div>
       </Card>
     </div>
   );
