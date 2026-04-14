@@ -1,11 +1,5 @@
 import Card from "../components/ui/Card";
 
-const trainers = [
-  { name: "Chris Green", specialty: "Strength & Conditioning", members: 34 },
-  { name: "Sam Patel", specialty: "Yoga & Mobility", members: 21 },
-  { name: "Jamie Fox", specialty: "HIIT & Cardio", members: 27 }
-];
-
 function Trainers() {
   return (
     <div className="page">
@@ -15,31 +9,14 @@ function Trainers() {
           <p className="page-subtitle">Assign members and track trainer performance.</p>
         </div>
         <div className="page-header-actions">
-          <button className="btn btn-primary">+ Add Trainer</button>
+          <button className="btn btn-primary" disabled>
+            + Add Trainer
+          </button>
         </div>
       </div>
 
       <Card title="Trainer Overview">
-        <div className="table-wrapper">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Specialty</th>
-                <th>Assigned Members</th>
-              </tr>
-            </thead>
-            <tbody>
-              {trainers.map((t) => (
-                <tr key={t.name}>
-                  <td>{t.name}</td>
-                  <td>{t.specialty}</td>
-                  <td>{t.members}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <div>No trainer data yet. Add trainer management endpoints to enable this view.</div>
       </Card>
     </div>
   );

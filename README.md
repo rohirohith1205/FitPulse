@@ -1,20 +1,42 @@
-# FitPulse
-FitPulse is a web-based Gym Membership Management System built using the MERN Stack.
-It helps gym administrators manage members, membership plans, payments, and attendance through a centralized dashboard. The system simplifies record keeping and improves overall gym management efficiency.
+# FitPulse (MERN)
 
-**Features**
-Member registration and management
-Membership plan management
-Payment tracking
-Attendance tracking
-Admin dashboard for monitoring gym operations
-Secure user authentication
+## What was added
+- `server/`: Express + Mongoose API
+- `/api/plans`: CRUD
+- `/api/members`: CRUD + search/status filters
+- Vite dev proxy: `/api/*` → `http://localhost:5000`
 
-**Technologies thought of using**
-Frontend - React
+## Setup (local)
+### 1) Configure MongoDB
+Use either **MongoDB Atlas** or a **local MongoDB** install.
 
-Backend - Node.js, Express.js
+- Copy `server/.env.example` → `server/.env`
+- Set `MONGODB_URI`
+  - Local example: `mongodb://127.0.0.1:27017/fitpulse`
+  - Atlas example: `mongodb+srv://<user>:<pass>@<cluster>/<db>?retryWrites=true&w=majority`
 
-Database - MongoDB
+### 2) Install deps
+```bash
+npm install
+cd server && npm install
+```
 
-Version Control - Git, GitHub
+### 3) Run (two options)
+- **One command**:
+```bash
+npm run dev:all
+```
+
+- **Two terminals**:
+```bash
+cd server && npm run dev
+```
+```bash
+npm run dev
+```
+
+## API quick test
+- `GET /api/health`
+- `GET /api/plans`
+- `GET /api/members`
+
