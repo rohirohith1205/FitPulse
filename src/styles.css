@@ -550,6 +550,11 @@ body {
   padding-right: 1.8rem;
 }
 
+.select option {
+  background-color: var(--bg-body);
+  color: var(--text-primary);
+}
+
 .input-group {
   display: flex;
   align-items: center;

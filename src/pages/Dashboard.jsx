@@ -193,7 +193,7 @@ function Dashboard() {
             <thead>
               <tr>
                 <th>Name</th>
-                <th>Phone</th>
+                <th>Email</th>
                 <th>Plan</th>
                 <th>Join Date</th>
               </tr>
@@ -207,7 +207,7 @@ function Dashboard() {
               {recent.map((member) => (
                 <tr key={member._id}>
                   <td>{member.fullName}</td>
-                  <td>{member.phone}</td>
+                  <td>{member.email}</td>
                   <td>{member.planName || member.membershipPlanId?.name || ""}</td>
                   <td>{formatDate(member.joinDate)}</td>
                 </tr>

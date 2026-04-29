@@ -15,8 +15,8 @@ export async function listMembers({
   if (limit) qs.set("limit", String(limit));
   const res = await http(`/api/members?${qs.toString()}`);
   return {
-    data: res.data?.data ?? [],
-    meta: res.data?.meta ?? null
+    data: res.data ?? [],
+    meta: res.meta ?? null
   };
 }
 
