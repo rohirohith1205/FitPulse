@@ -15,7 +15,8 @@ const memberSchema = new mongoose.Schema(
       required: false
     },
     joinDate: { type: Date, required: true },
-    expiryDate: { type: Date, required: true }
+    expiryDate: { type: Date, required: true },
+    isPaid: { type: Boolean, default: false }
   },
   { timestamps: true }
 );
