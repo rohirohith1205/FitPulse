@@ -1,3 +1,5 @@
+import axios from "axios";
+
 export class HttpError extends Error {
   constructor(message, { status, code } = {}) {
     super(message);
@@ -7,28 +9,36 @@ export class HttpError extends Error {
   }
 }
 
-export async function http(path, { method = "GET", body, headers } = {}) {
-  const res = await fetch(path, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      ...(headers ?? {})
-    },
-    body: body ? JSON.stringify(body) : undefined,
-    credentials: "include"
-  });
+const apiClient = axios.create({
+  baseURL: "/",
+});
 
-  const isJson = res.headers.get("content-type")?.includes("application/json");
-  const payload = isJson ? await res.json() : null;
-
-  if (!res.ok) {
-    const message = payload?.error?.message ?? `Request failed (${res.status})`;
-    throw new HttpError(message, {
-      status: res.status,
-      code: payload?.error?.code
-    });
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
+  return config;
+});
 
-  return payload;
+export async function http(path, { method = "GET", body, headers } = {}) {
+  try {
+    const res = await apiClient({
+      url: path,
+      method,
+      data: body,
+      headers,
+    });
+    return res.data;
+  } catch (error) {
+    if (error.response) {
+      const payload = error.response.data;
+      const message = payload?.error?.message ?? payload?.error ?? `Request failed (${error.response.status})`;
+      throw new HttpError(message, {
+        status: error.response.status,
+        code: payload?.error?.code,
+      });
+    }
+    throw new HttpError(error.message, { status: 500 });
+  }
 }
-

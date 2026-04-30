@@ -1,10 +1,12 @@
 import Card from "../components/ui/Card";
 import { useEffect, useMemo, useState } from "react";
-import { createMember, deleteMember, listMembers, updateMember } from "../api/members";
+import { createMember, deleteMember, listMembers } from "../api/members";
 import { listPlans } from "../api/plans";
 import { listTrainers } from "../api/trainers";
 import { createPayment } from "../api/payments";
 import Modal from "../components/ui/Modal";
+import PaymentModal from "../components/ui/PaymentModal";
+import { showToast } from "../components/ui/Toast";
 
 function formatDate(value) {
   if (!value) return "";
@@ -29,7 +31,9 @@ function Members() {
   const [meta, setMeta] = useState(null);
 
   const [plans, setPlans] = useState([]);
+  const [trainers, setTrainers] = useState([]);
 
+  // Add-member modal
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
@@ -44,16 +48,12 @@ function Members() {
       expiryDate: today
     };
   });
-  
-  // Payment Flow State
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [paymentMember, setPaymentMember] = useState(null);
-  const [paymentAmount, setPaymentAmount] = useState(0);
-  const [paymentMethod, setPaymentMethod] = useState("Cash");
-  const [paymentStep, setPaymentStep] = useState(1);
-  const [paymentError, setPaymentError] = useState("");
-  const [processingPayment, setProcessingPayment] = useState(false);
 
+  // Payment modal
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [paymentMember, setPaymentMember] = useState(null);
+
+  // ── Data fetching ─────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -72,37 +72,23 @@ function Members() {
         if (cancelled) return;
         setLoading(false);
       });
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [search, status]);
-
-  const [trainers, setTrainers] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
     listPlans({ includeInactive: false })
-      .then((data) => {
-        if (!cancelled) setPlans(data);
-      })
-      .catch(() => {
-        if (!cancelled) setPlans([]);
-      });
-      
+      .then((data) => { if (!cancelled) setPlans(data); })
+      .catch(() =>   { if (!cancelled) setPlans([]); });
+
     listTrainers()
-      .then((data) => {
-        if (!cancelled) setTrainers(data);
-      })
-      .catch(() => {
-        if (!cancelled) setTrainers([]);
-      });
-      
-    return () => {
-      cancelled = true;
-    };
+      .then((data) => { if (!cancelled) setTrainers(data); })
+      .catch(() =>   { if (!cancelled) setTrainers([]); });
+
+    return () => { cancelled = true; };
   }, []);
 
+  // ── Derived rows ──────────────────────────────────────
   const rows = useMemo(() => {
     return members.map((m) => ({
       id: m._id,
@@ -113,24 +99,12 @@ function Members() {
       trainerId: m.trainerId?._id || m.trainerId,
       joinDate: formatDate(m.joinDate),
       expiryDate: formatDate(m.expiryDate),
+      isPaid: !!m.isPaid,
       status: m.status || "Active"
     }));
   }, [members]);
 
-  function openAdd() {
-    const today = new Date().toISOString().slice(0, 10);
-    setForm({
-      fullName: "",
-      email: "",
-      membershipPlanId: plans[0]?._id ?? "",
-      trainerId: "",
-      joinDate: today,
-      expiryDate: plans[0]?.durationDays ? addDaysIso(today, plans[0].durationDays) : today
-    });
-    setFormError("");
-    setAddOpen(true);
-  }
-
+  // ── Helpers ───────────────────────────────────────────
   async function refresh() {
     setLoading(true);
     setError("");
@@ -143,6 +117,22 @@ function Members() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function openAdd() {
+    const today = new Date().toISOString().slice(0, 10);
+    setForm({
+      fullName: "",
+      email: "",
+      membershipPlanId: plans[0]?._id ?? "",
+      trainerId: "",
+      joinDate: today,
+      expiryDate: plans[0]?.durationDays
+        ? addDaysIso(today, plans[0].durationDays)
+        : today
+    });
+    setFormError("");
+    setAddOpen(true);
   }
 
   async function onCreate(e) {
@@ -159,6 +149,7 @@ function Members() {
         expiryDate: form.expiryDate
       });
       setAddOpen(false);
+      showToast("success", "Member added successfully!");
       await refresh();
     } catch (err) {
       setFormError(err?.message ?? "Failed to add member");
@@ -168,76 +159,39 @@ function Members() {
   }
 
   async function onDelete(id) {
-    const ok = window.confirm("Delete this member?");
-    if (!ok) return;
+    if (!window.confirm("Delete this member?")) return;
     try {
       await deleteMember(id);
+      showToast("success", "Member deleted.");
       await refresh();
     } catch (e) {
-      setError(e?.message ?? "Failed to delete member");
+      showToast("error", e?.message ?? "Failed to delete member");
     }
   }
-  
-  const openPayment = (m) => {
+
+  // ── Payment flow ──────────────────────────────────────
+  function openPayment(m) {
     setPaymentMember(m);
-    const plan = plans.find(p => p._id === m.planId || p.name === m.plan);
-    let baseAmount = plan ? plan.priceCents / 100 : 0;
-    if (m.trainerId) baseAmount += 1000;
-    
-    setPaymentAmount(baseAmount);
-    setPaymentMethod("Cash");
-    setPaymentStep(1);
-    setPaymentError("");
-    setPaymentModalOpen(true);
-  };
-  
-  const processPayment = async () => {
-    setProcessingPayment(true);
-    setPaymentError("");
-    try {
-      await createPayment({
-        memberId: paymentMember.id,
-        amount: paymentAmount,
-        method: paymentMethod.toLowerCase()
-      });
-      
-      const plan = plans.find(p => p._id === paymentMember.planId || p.name === paymentMember.plan);
-      if (plan) {
-         let newExpiry;
-         const today = new Date();
-         const currentExpiry = new Date(paymentMember.expiryDate);
-         
-         if (currentExpiry.getTime() < today.getTime()) {
-             newExpiry = addDaysIso(today.toISOString().slice(0, 10), plan.durationDays);
-         } else {
-             newExpiry = addDaysIso(paymentMember.expiryDate, plan.durationDays);
-         }
-         await updateMember(paymentMember.id, { expiryDate: newExpiry });
-      }
-      
-      setPaymentModalOpen(false);
-      await refresh();
-      // Optional: show toast success notification here
-    } catch (err) {
-      setPaymentError(err?.message || "Payment failed");
-    } finally {
-      setProcessingPayment(false);
-    }
-  };
+    setPaymentOpen(true);
+  }
 
-  const handlePaymentNext = () => {
-      if (paymentMethod === "UPI") {
-          setPaymentStep(2); // Show QR
-      } else {
-          processPayment(); // Direct cash payment
-      }
-  };
+  async function handlePaymentComplete({ memberId, planId, amount, method }) {
+    await createPayment({ memberId, planId, amount, method });
+    showToast("success", `₹${amount.toFixed(2)} payment recorded via ${method.toUpperCase()}`);
+    await refresh();
+    // Also refresh trainers (in case member counts changed)
+    listTrainers()
+      .then(setTrainers)
+      .catch(() => {});
+  }
 
-  const selectedPlanForCreate = plans.find(p => p._id === form.membershipPlanId);
-  let computedAmount = selectedPlanForCreate ? (selectedPlanForCreate.priceCents / 100) : 0;
+  // ── Computed amount for the add-member form ───────────
+  const selectedPlan = plans.find((p) => p._id === form.membershipPlanId);
+  let computedAmount = selectedPlan ? selectedPlan.priceCents / 100 : 0;
   if (form.trainerId) computedAmount += 1000;
-  const amountToPayDisplay = computedAmount.toFixed(2);
+  const amountDisplay = computedAmount.toFixed(2);
 
+  // ── Render ────────────────────────────────────────────
   return (
     <div className="page">
       <div className="page-header">
@@ -271,8 +225,9 @@ function Members() {
         </div>
       </div>
 
+      {/* ── Member table ──────────────────────────────── */}
       <Card title="Member List">
-        {loading && <div>Loading members...</div>}
+        {loading && <div>Loading members…</div>}
         {!loading && error && <div>{error}</div>}
         {!loading && !error && meta?.total === 0 && <div>No members yet.</div>}
         <div className="table-wrapper">
@@ -305,12 +260,18 @@ function Members() {
                     </td>
                     <td>
                       <div className="table-actions">
-                        <button 
-                          className="btn btn-ghost-sm btn-primary"
-                          onClick={() => openPayment(m)}
-                        >
-                          Pay
-                        </button>
+                        {m.isPaid && m.status !== "Overdue" ? (
+                          <button className="btn btn-paid" disabled>
+                            Paid ✓
+                          </button>
+                        ) : (
+                          <button
+                            className="btn btn-pay"
+                            onClick={() => openPayment(m)}
+                          >
+                            Pay Now
+                          </button>
+                        )}
                         <button
                           className="btn btn-ghost-sm btn-danger"
                           onClick={() => onDelete(m.id)}
@@ -326,7 +287,7 @@ function Members() {
         </div>
       </Card>
 
-      {/* Add Member Modal */}
+      {/* ── Add Member Modal ──────────────────────────── */}
       <Modal
         open={addOpen}
         title="Add member"
@@ -341,14 +302,23 @@ function Members() {
             >
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary" form="add-member-form" disabled={saving}>
-              {saving ? "Saving..." : "Add member"}
+            <button
+              type="submit"
+              className="btn btn-primary"
+              form="add-member-form"
+              disabled={saving}
+            >
+              {saving ? "Saving…" : "Add member"}
             </button>
           </>
         }
       >
         <form id="add-member-form" className="form-grid" onSubmit={onCreate}>
-          {formError && <div>{formError}</div>}
+          {formError && <div className="toast toast-error" style={{ margin: 0 }}>
+            <span className="toast-icon">✕</span>
+            <span className="toast-message">{formError}</span>
+          </div>}
+
           <div className="form-field">
             <span className="label">Full name</span>
             <input
@@ -359,6 +329,7 @@ function Members() {
               required
             />
           </div>
+
           <div className="form-field">
             <span className="label">Email</span>
             <input
@@ -370,6 +341,7 @@ function Members() {
               required
             />
           </div>
+
           <div className="form-field">
             <span className="label">Plan</span>
             <select
@@ -381,14 +353,14 @@ function Members() {
                 setForm((f) => ({
                   ...f,
                   membershipPlanId,
-                  expiryDate: plan?.durationDays ? addDaysIso(f.joinDate, plan.durationDays) : f.expiryDate
+                  expiryDate: plan?.durationDays
+                    ? addDaysIso(f.joinDate, plan.durationDays)
+                    : f.expiryDate
                 }));
               }}
               required
             >
-              <option value="" disabled>
-                Select a plan...
-              </option>
+              <option value="" disabled>Select a plan…</option>
               {plans.map((p) => (
                 <option key={p._id} value={p._id}>
                   {p.name} ({p.durationDays} days)
@@ -396,31 +368,28 @@ function Members() {
               ))}
             </select>
           </div>
-          
+
           <div className="form-field">
             <span className="label">Trainer (Optional)</span>
             <select
               className="input select"
               value={form.trainerId}
-              onChange={(e) => setForm(f => ({ ...f, trainerId: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, trainerId: e.target.value }))}
             >
               <option value="">No Trainer</option>
-              {trainers.filter(t => t.assignedMembers < 3).map((t) => (
-                <option key={t._id} value={t._id}>
-                  {t.name} - ({t.assignedMembers}/3 assigned)
-                </option>
-              ))}
+              {trainers
+                .filter((t) => t.assignedMembers < 3)
+                .map((t) => (
+                  <option key={t._id} value={t._id}>
+                    {t.name} — ({t.assignedMembers}/3 assigned)
+                  </option>
+                ))}
             </select>
           </div>
-          
+
           <div className="form-field">
             <span className="label">Amount (Calculated)</span>
-            <input
-              type="text"
-              className="input"
-              value={`₹${amountToPayDisplay}`}
-              disabled
-            />
+            <input type="text" className="input" value={`₹${amountDisplay}`} disabled />
           </div>
 
           <div className="form-field">
@@ -435,12 +404,15 @@ function Members() {
                 setForm((f) => ({
                   ...f,
                   joinDate,
-                  expiryDate: plan?.durationDays ? addDaysIso(joinDate, plan.durationDays) : f.expiryDate
+                  expiryDate: plan?.durationDays
+                    ? addDaysIso(joinDate, plan.durationDays)
+                    : f.expiryDate
                 }));
               }}
               required
             />
           </div>
+
           <div className="form-field">
             <span className="label">Expiry date</span>
             <input
@@ -453,72 +425,16 @@ function Members() {
           </div>
         </form>
       </Modal>
-      
-      {/* Payment Modal */}
-      <Modal
-        open={paymentModalOpen}
-        title={`Payment for ${paymentMember?.name}`}
-        onClose={() => !processingPayment && setPaymentModalOpen(false)}
-        footer={
-           paymentStep === 1 ? (
-               <>
-                  <button type="button" className="btn btn-outline" onClick={() => setPaymentModalOpen(false)}>Cancel</button>
-                  <button type="button" className="btn btn-primary" onClick={handlePaymentNext}>Continue to Pay</button>
-               </>
-           ) : (
-               <>
-                  <button type="button" className="btn btn-outline" onClick={() => setPaymentStep(1)} disabled={processingPayment}>Back</button>
-                  <button type="button" className="btn btn-primary" onClick={processPayment} disabled={processingPayment}>
-                      {processingPayment ? "Processing..." : "Confirm Payment"}
-                  </button>
-               </>
-           )
-        }
-      >
-        <div className="form-grid">
-            {paymentError && <div className="error" style={{ color: "red", gridColumn: "1 / -1" }}>{paymentError}</div>}
-            
-            {paymentStep === 1 && (
-                <>
-                  <div className="form-field">
-                      <span className="label">Plan</span>
-                      <input className="input" value={paymentMember?.plan || ""} disabled />
-                  </div>
-                  <div className="form-field">
-                      <span className="label">Amount</span>
-                      <input className="input" value={`₹${paymentAmount.toFixed(2)}`} disabled />
-                  </div>
-                  <div className="form-field" style={{ gridColumn: "1 / -1" }}>
-                      <span className="label">Payment Method</span>
-                      <select className="input select" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-                          <option value="Cash">Cash</option>
-                          <option value="UPI">UPI</option>
-                      </select>
-                  </div>
-                </>
-            )}
 
-            {paymentStep === 2 && paymentMethod === "UPI" && (
-                <div style={{ gridColumn: "1 / -1", textAlign: "center" }}>
-                    <p style={{ marginBottom: "1rem" }}>Scan QR to Pay <strong>₹{paymentAmount.toFixed(2)}</strong></p>
-                    <div style={{ display: "flex", justifyContent: "center", padding: "1rem" }}>
-                       <img 
-                          src={`/qr/${(paymentMember?.plan || "default").toLowerCase()}.png`} 
-                          alt="UPI QR Code" 
-                          style={{ maxWidth: "250px", border: "4px solid white", borderRadius: "8px" }}
-                          onError={(e) => { 
-                             e.target.onerror = null; 
-                             e.target.src = "/qr/default.png"; // Fallback image just in case
-                          }}
-                       />
-                    </div>
-                    <p style={{ fontSize: "0.85rem", color: "#8b92b7", marginTop: "1rem" }}>
-                       Please confirm payment below after the transaction is successful on your UPI app.
-                    </p>
-                </div>
-            )}
-        </div>
-      </Modal>
+      {/* ── Payment Modal (dynamic QR) ────────────────── */}
+      <PaymentModal
+        open={paymentOpen}
+        member={paymentMember}
+        plans={plans}
+        trainerFee={1000}
+        onClose={() => setPaymentOpen(false)}
+        onPaymentComplete={handlePaymentComplete}
+      />
     </div>
   );
 }

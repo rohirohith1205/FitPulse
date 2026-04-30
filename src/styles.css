@@ -1,4 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --bg-body: #020617;
@@ -521,6 +524,37 @@ body {
   background: rgba(248, 113, 113, 0.12);
 }
 
+.btn-pay {
+  padding: 0.3rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #022c22;
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.35);
+  transition: all 0.18s ease;
+}
+
+.btn-pay:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(34, 197, 94, 0.5);
+  background: linear-gradient(135deg, #4ade80, #22c55e);
+}
+
+.btn-paid {
+  padding: 0.3rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  background: rgba(34, 197, 94, 0.08);
+  color: #4ade80;
+  cursor: default;
+  opacity: 0.7;
+}
+
 .table-actions {
   display: flex;
   gap: 0.4rem;
@@ -694,6 +728,9 @@ body {
 
 .modal {
   width: min(560px, 100%);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
   border-radius: 1.1rem;
   border: 1px solid rgba(31, 41, 55, 0.9);
   background: radial-gradient(circle at top left, #0b1222, #020617 60%);
@@ -716,6 +753,9 @@ body {
 
 .modal-body {
   padding: 1rem 1.1rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .modal-footer {
@@ -804,5 +844,222 @@ body {
   .page-header-actions {
     justify-content: flex-start;
   }
+}
+
+/* ═══════════════ Toast Notifications ═══════════════ */
+.toast-container {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.82rem;
+  border: 1px solid rgba(31, 41, 55, 0.9);
+  background: rgba(15, 23, 42, 0.96);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  animation: toast-in 0.32s ease forwards;
+  max-width: 400px;
+}
+
+.toast-exit {
+  animation: toast-out 0.32s ease forwards;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(60px) scale(0.95); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes toast-out {
+  from { opacity: 1; transform: translateX(0) scale(1); }
+  to   { opacity: 0; transform: translateX(60px) scale(0.92); }
+}
+
+.toast-success {
+  border-color: rgba(34, 197, 94, 0.5);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(15, 23, 42, 0.96));
+}
+
+.toast-error {
+  border-color: rgba(248, 113, 113, 0.5);
+  background: linear-gradient(135deg, rgba(248, 113, 113, 0.12), rgba(15, 23, 42, 0.96));
+}
+
+.toast-info {
+  border-color: rgba(56, 189, 248, 0.5);
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(15, 23, 42, 0.96));
+}
+
+.toast-icon {
+  font-size: 0.95rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.toast-success .toast-icon { color: #4ade80; }
+.toast-error .toast-icon   { color: #f87171; }
+.toast-info .toast-icon    { color: #38bdf8; }
+
+.toast-message {
+  flex: 1;
+  color: var(--text-primary);
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  color: var(--text-soft);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0 0.15rem;
+  line-height: 1;
+}
+
+.toast-close:hover {
+  color: var(--text-primary);
+}
+
+/* ═══════════════ Payment Modal ═══════════════ */
+.payment-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  padding: 0.85rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(31, 41, 55, 0.7);
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.payment-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.payment-info-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.payment-info-total {
+  grid-column: 1 / -1;
+  border-top: 1px solid rgba(31, 41, 55, 0.7);
+  padding-top: 0.6rem;
+  margin-top: 0.2rem;
+}
+
+.payment-total-value {
+  font-size: 1.2rem;
+  color: #4ade80;
+}
+
+.payment-method-tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.payment-tab {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(31, 41, 55, 0.9);
+  background: rgba(15, 23, 42, 0.5);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  text-align: center;
+}
+
+.payment-tab:hover {
+  border-color: rgba(34, 197, 94, 0.4);
+  color: var(--text-primary);
+}
+
+.payment-tab-active {
+  border-color: rgba(34, 197, 94, 0.7);
+  background: rgba(34, 197, 94, 0.1);
+  color: #bbf7d0;
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.3);
+}
+
+.payment-qr-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem 1rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(31, 41, 55, 0.7);
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.payment-qr-wrapper {
+  padding: 0.5rem;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 0 30px rgba(34, 197, 94, 0.15);
+}
+
+.payment-qr-amount {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #4ade80;
+  margin: 0;
+}
+
+.payment-qr-hint {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin: 0;
+  text-align: center;
+}
+
+.payment-qr-note {
+  font-size: 0.75rem;
+  color: var(--text-soft);
+  margin: 0;
+  text-align: center;
+  max-width: 320px;
+}
+
+.payment-cash-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem 1rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(31, 41, 55, 0.7);
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.payment-cash-amount {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #4ade80;
+}
+
+.payment-cash-hint {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0;
+  text-align: center;
+  max-width: 340px;
 }
 

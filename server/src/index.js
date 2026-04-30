@@ -15,6 +15,7 @@ import { router as trainersRouter } from "./routes/trainers.js";
 import { router as paymentsRouter } from "./routes/payments.js";
 import { router as settingsRouter } from "./routes/settings.js";
 import { router as dashboardRouter } from "./routes/dashboard.js";
+import { protect } from "./middleware/authMiddleware.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,14 +36,15 @@ app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 app.use(morgan("dev"));
 
+
 app.use("/api/health", healthRouter);
 app.use("/api/auth", authRouter);
-app.use("/api/plans", plansRouter);
-app.use("/api/members", membersRouter);
-app.use("/api/trainers", trainersRouter);
-app.use("/api/payments", paymentsRouter);
-app.use("/api/settings", settingsRouter);
-app.use("/api/dashboard", dashboardRouter);
+app.use("/api/plans", protect, plansRouter);
+app.use("/api/members", protect, membersRouter);
+app.use("/api/trainers", protect, trainersRouter);
+app.use("/api/payments", protect, paymentsRouter);
+app.use("/api/settings", protect, settingsRouter);
+app.use("/api/dashboard", protect, dashboardRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

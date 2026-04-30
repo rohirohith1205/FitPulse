@@ -5,7 +5,6 @@ const navItems = [
   { label: "Dashboard", to: "/dashboard" },
   { label: "Members", to: "/members" },
   { label: "Membership Plans", to: "/membership-plans" },
-  { label: "Attendance", to: "/attendance" },
   { label: "Payments", to: "/payments" },
   { label: "Trainers", to: "/trainers" },
   { label: "Analytics", to: "/analytics" },
